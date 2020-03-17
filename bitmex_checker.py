@@ -47,7 +47,6 @@ async def bitmex_ticker():
                 # name = input("What's your name? ")
                 ping=json.dumps({"op": "subscribe", "args": ["instrument:XBTUSD","instrument:.BXBT"]})
                 await websocket.send(ping)
-                print(f"> {ping}")
                 while True:
                     data = await websocket.recv()
                     json_data=json.loads(data)
