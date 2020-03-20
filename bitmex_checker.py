@@ -11,21 +11,28 @@ from BotNotifier import BotNotifier
 args = Namespace(
     bitmex_price=0,
     bxbt_price=0,
-    balance=2000,
-    position= [],
-    capital= 1000,
-    amount = 0.1,
-    leverage = 100,
+    highest_gap={},
     sent = False
 )
 config ={}
 bot = None
 
+async def gap_logger():
+    while True:
+        if args.highest_gap:
+            print("Highest GAP: {} {} {}".format(args.highest_gap["percentage"]*100,args.highest_gap["bitmex"],args.highest_gap["bxbt"]))
+        await asyncio.sleep(60)
 async def opportunity_finder():
     def build_msg():
         return "Bitmex: {} BXBT: {} GAP: {}%".format(args.bitmex_price,args.bxbt_price,gap_percentage*100)
     gap = abs(args.bitmex_price - args.bxbt_price)
     gap_percentage = gap / args.bitmex_price
+    if not args.highest_gap or gap_percentage>= args.highest_gap["percentage"]:
+        args.highest_gap = {
+            "percentage":gap_percentage,
+            "bitmex":args.bitmex_price,
+            "bxbt":args.bxbt_price
+        }
     msg = None
     if gap_percentage>=0.05:
         msg = "#100X Leverage NOW\n"
@@ -34,6 +41,9 @@ async def opportunity_finder():
         msg = "#50X Leverage NOW\n"
         msg+=build_msg()
     elif gap_percentage>=0.01:
+        msg = "#10X Leverage NOW\n"
+        msg += build_msg()
+    elif gap_percentage>=0.005:
         msg = build_msg()
     if msg and args.sent:
         await bot.notify(msg)
@@ -95,6 +105,7 @@ if __name__ == '__main__':
     bot = BotNotifier(config["telegram_bot_api"],config["telegram_channel_id"])
     coro = bitmex_ticker()
     asyncio.ensure_future(coro)
+    asyncio.ensure_future(gap_logger())
     asyncio.get_event_loop().run_forever()
 
 
