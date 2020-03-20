@@ -20,7 +20,7 @@ bot = None
 async def gap_logger():
     while True:
         if args.highest_gap:
-            print("Highest GAP: {} {} {}".format(args.highest_gap["percentage"]*100,args.highest_gap["bitmex"],args.highest_gap["bxbt"]))
+            print("Highest GAP: {}% Bitmex:{} BXBT:{}".format(args.highest_gap["percentage"]*100,args.highest_gap["bitmex"],args.highest_gap["bxbt"]))
         await asyncio.sleep(60)
 async def opportunity_finder():
     def build_msg():
