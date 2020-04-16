@@ -45,9 +45,10 @@ async def opportunity_finder():
         msg += build_msg()
     elif gap_percentage>=0.005:
         msg = build_msg()
-    if msg and args.sent:
+    if msg:
         await bot.notify(msg)
         args.sent=True
+        await asyncio.sleep(60)
 
 
 
