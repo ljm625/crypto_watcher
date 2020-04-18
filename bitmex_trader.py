@@ -92,15 +92,14 @@ async def do_trade(direction,price,amount,leverage):
     asyncio.ensure_future(order_ttl(order_id))
     msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage)
     await args.bot.notify(msg)
-
-    # args.blocker = False
+    args.blocker = False
 
 def load_config():
     with open("config.yaml") as file:
         cfg = yaml.safe_load(file.read())
         return cfg
 
-def find_gap(data):
+async def find_gap(data):
     if data.get('data')[0]['symbol'] == 'XBTUSD':
         trade_data = data.get('data')[0]
         if trade_data.get("lastPrice"):
@@ -113,7 +112,7 @@ def find_gap(data):
         gap = abs(args.bitmex_price - args.bxbt_price)
         gap_percentage = gap / args.bitmex_price
         if gap_percentage >=0.001:
-            asyncio.ensure_future(opportunity_finder())
+            await opportunity_finder()
 
 def update_position(data):
     if data.get('action') and data.get('action')=='update':
@@ -148,9 +147,9 @@ def update_order(data):
                     asyncio.ensure_future(args.bot.notify(msg))
 
 
-def handler_ws(data):
+async def handler_ws(data):
     if data.get('table') == 'instrument':
-        find_gap(data)
+        await find_gap(data)
     elif data.get('table') == 'position':
         update_position(data)
     elif data.get('table') == 'order':

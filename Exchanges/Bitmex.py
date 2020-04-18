@@ -172,7 +172,7 @@ class Bitmex(object):
                     while True:
                         data = await websocket.recv()
                         json_data=json.loads(data)
-                        handler(json_data)
+                        await handler(json_data)
             except Exception as e:
                 print("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 await self.websocket(subcribes,handler,auth)
