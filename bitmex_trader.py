@@ -78,19 +78,19 @@ async def do_trade(direction,price,amount,leverage):
         args.cur_leverage = leverage
     if direction=='buy':
         if price<args.bitmex_price:
-            order_id = await args.api.do_long(amount,price)
+            order_id = await args.api.do_long(amount*leverage,price)
         else:
-            order_id = await args.api.do_long(amount,args.bitmex_price)
+            order_id = await args.api.do_long(amount*leverage,args.bitmex_price)
     else:
         if price > args.bitmex_price:
-            order_id = await args.api.do_short(amount, price)
+            order_id = await args.api.do_short(amount*leverage, price)
         else:
-            order_id = await args.api.do_short(amount,args.bitmex_price)
+            order_id = await args.api.do_short(amount*leverage,args.bitmex_price)
     # Make sure order will be ignored after ttl.
     args.have_order = True
     args.order_id = order_id
     asyncio.ensure_future(order_ttl(order_id))
-    msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount)
+    msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage)
     await args.bot.notify(msg)
 
     # args.blocker = False
