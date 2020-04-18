@@ -11,3 +11,7 @@ testnet : false
 money_split : 钱分多少份，如20的话就每次开单1/20
 order_ttl: 自动下单的存活时间，以秒为单位，7200秒就代表2小时后如没有成交自动撤单
 ```
+
+然后运行python3 bitmex_trader.py 即可
+
+仅供测试&参考
