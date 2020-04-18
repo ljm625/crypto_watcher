@@ -45,10 +45,11 @@ async def opportunity_finder():
         direction="sell"
     else:
         direction="buy"
+    cur_price = int(args.bitmex_price)
     if gap_percentage>=0.01:
-        await do_trade(direction,args.order_size,100)
+        await do_trade(direction,cur_price,args.order_size,100)
     elif gap_percentage>=0.005:
-        await do_trade(direction,args.order_size,50)
+        await do_trade(direction,cur_price,args.order_size,50)
 
 async def order_ttl(order_id):
     await asyncio.sleep(config["order_ttl"])
@@ -58,7 +59,7 @@ async def unblock():
     await asyncio.sleep(30)
     args.blocker = False
 
-async def do_trade(direction,amount,leverage):
+async def do_trade(direction,price,amount,leverage):
     # Blocker
     if args.blocker:
         return
@@ -76,9 +77,15 @@ async def do_trade(direction,amount,leverage):
         await args.api.update_leverage(leverage)
         args.cur_leverage = leverage
     if direction=='buy':
-        order_id = await args.api.do_long(amount,args.bitmex_price)
+        if price<args.bitmex_price:
+            order_id = await args.api.do_long(amount,price)
+        else:
+            order_id = await args.api.do_long(amount,args.bitmex_price)
     else:
-        order_id = await args.api.do_short(amount,args.bitmex_price)
+        if price > args.bitmex_price:
+            order_id = await args.api.do_short(amount, price)
+        else:
+            order_id = await args.api.do_short(amount,args.bitmex_price)
     # Make sure order will be ignored after ttl.
     args.have_order = True
     args.order_id = order_id
