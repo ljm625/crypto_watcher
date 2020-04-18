@@ -160,7 +160,7 @@ async def balance_checker():
 
 
 async def main(cfg):
-    bm = Bitmex("test",cfg["bitmex_test_id"],"XBTUSD",cfg["bitmex_test_secret"],testnet=True)
+    bm = Bitmex("test",cfg["bitmex_test_id"],"XBTUSD",cfg["bitmex_test_secret"],testnet=cfg["testnet"])
     args.api = bm
     args.bot = BotNotifier(cfg["telegram_bot_api"],cfg["telegram_channel_id_trade"])
     # Calculate order_size
