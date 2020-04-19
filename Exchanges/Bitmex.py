@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import time
 import urllib.parse
 
@@ -174,6 +175,7 @@ class Bitmex(object):
                         json_data=json.loads(data)
                         await handler(json_data)
             except Exception as e:
+                logging.error("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 print("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 await self.websocket(subcribes,handler,auth)
 
