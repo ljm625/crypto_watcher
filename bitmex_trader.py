@@ -72,6 +72,13 @@ async def unblock():
     logging.info("Unblock Buy")
     args.blocker = False
 
+
+async def clear_logger():
+    while True:
+        await asyncio.sleep(86400)
+        with open("debug.log","w"):
+            pass
+
 async def do_trade(direction,price,amount,leverage):
     # Blocker
     try:
@@ -226,6 +233,8 @@ async def main(cfg):
 
     # Check balance
     asyncio.ensure_future(balance_checker())
+    # Clear logging
+    asyncio.ensure_future(clear_logger())
 
     await bm.websocket(["instrument:XBTUSD","instrument:.BXBT","position:XBTUSD","order:XBTUSD"],handler_ws)
 
