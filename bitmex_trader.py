@@ -63,8 +63,8 @@ async def order_ttl(order_id):
         await args.api.cancel_order(order_id)
         logging.info("Order cancelled by TTL timeout {}".format(order_id))
     except Exception as e:
-        await args.bot.notify("ERROR in Program")
-        logging.error("Order TTL issue {}".format(e))
+        await args.bot.notify("ERROR in Program, Order TTL id : {}".format(order_id))
+        logging.error("Order TTL issue {} Order ID: {}".format(e,order_id))
 
 
 async def unblock():
@@ -127,7 +127,7 @@ async def do_trade(direction,price,amount,leverage):
             # Make sure order will be ignored after ttl.
             args.have_order = True
             args.order_id = order_id
-            asyncio.ensure_future(order_ttl(order_id))
+            asyncio.ensure_future(order_ttl(order_id+""))
             msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage)
             logging.info("Submitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage))
             await args.bot.notify(msg)
