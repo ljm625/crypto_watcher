@@ -81,56 +81,67 @@ async def clear_logger():
 
 async def do_trade(direction,price,amount,leverage):
     # Blocker
-    try:
-        if args.blocker:
-            logging.info("Blocked Trade {} {}".format(direction,price))
-            return
-        else:
-            args.blocker = True
-            # Make sure if exception happens, it can still unblock
-            asyncio.ensure_future(unblock())
+    if args.blocker:
+        logging.info("Blocked Trade {} {}".format(direction,price))
+        return
+    else:
+        args.blocker = True
+        # Make sure if exception happens, it can still unblock
+        asyncio.ensure_future(unblock())
+    success =False
+    count = 0
+    while not success and count<3:
+        try:
         # Check before placing order
-        # Whether update order
-        if args.have_pos and args.direction == direction:
-            if args.cur_leverage*args.max_pos>args.current_pos+amount*args.cur_leverage:
-                logging.info(
-                    "Adding current position {} {} {}".format(direction.upper(), args.bitmex_price,
-                                                                                      amount * args.cur_leverage))
-                leverage=args.cur_leverage
+            # Whether update order
+            if args.have_pos and args.direction == direction:
+                if args.cur_leverage*args.max_pos>args.current_pos+amount*args.cur_leverage:
+                    logging.info(
+                        "Adding current position {} {} {}".format(direction.upper(), args.bitmex_price,
+                                                                                          amount * args.cur_leverage))
+                    leverage=args.cur_leverage
+                else:
+                    msg = "#Order\nIgnoring {} Order at {} {} because current have position".format(direction.upper(), args.bitmex_price, amount * leverage)
+                    await args.bot.notify(msg)
+                    logging.info("Ignoring {} Order at {} {} because current have position".format(direction.upper(), args.bitmex_price, amount * leverage))
+                    return
+            if args.have_order:
+                logging.info("Cancelling order {}".format(args.order_id))
+                await args.api.cancel_order(args.order_id)
+            if args.cur_leverage != leverage:
+                logging.info("Updating Leverage {}".format(leverage))
+                await args.api.update_leverage(leverage)
+                args.cur_leverage = leverage
+            if direction=='buy':
+                logging.info("Executing Buy at {}".format(price))
+                if price<args.bitmex_price:
+                    order_id = await args.api.do_long(amount*leverage,price)
+                else:
+                    order_id = await args.api.do_long(amount*leverage,args.bitmex_price)
             else:
-                msg = "#Order\nIgnoring {} Order at {} {} because current have position".format(direction.upper(), args.bitmex_price, amount * leverage)
-                await args.bot.notify(msg)
-                logging.info("Ignoring {} Order at {} {} because current have position".format(direction.upper(), args.bitmex_price, amount * leverage))
+                logging.info("Executing Sell at {}".format(price))
+                if price > args.bitmex_price:
+                    order_id = await args.api.do_short(amount*leverage, price)
+                else:
+                    order_id = await args.api.do_short(amount*leverage,args.bitmex_price)
+            # Make sure order will be ignored after ttl.
+            args.have_order = True
+            args.order_id = order_id
+            asyncio.ensure_future(order_ttl(order_id))
+            msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage)
+            logging.info("Submitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage))
+            await args.bot.notify(msg)
+            success =True
+            return
+        except Exception as e:
+            logging.error("Order issue: {}".format(e))
+            if "overloaded" in str(e):
+                print("System Overload")
+                await asyncio.sleep(5)
+                count+=1
+            else:
+                await args.bot.notify("ERROR in Program")
                 return
-        if args.have_order:
-            logging.info("Cancelling order {}".format(args.order_id))
-            await args.api.cancel_order(args.order_id)
-        if args.cur_leverage != leverage:
-            logging.info("Updating Leverage {}".format(leverage))
-            await args.api.update_leverage(leverage)
-            args.cur_leverage = leverage
-        if direction=='buy':
-            logging.info("Executing Buy at {}".format(price))
-            if price<args.bitmex_price:
-                order_id = await args.api.do_long(amount*leverage,price)
-            else:
-                order_id = await args.api.do_long(amount*leverage,args.bitmex_price)
-        else:
-            logging.info("Executing Sell at {}".format(price))
-            if price > args.bitmex_price:
-                order_id = await args.api.do_short(amount*leverage, price)
-            else:
-                order_id = await args.api.do_short(amount*leverage,args.bitmex_price)
-        # Make sure order will be ignored after ttl.
-        args.have_order = True
-        args.order_id = order_id
-        asyncio.ensure_future(order_ttl(order_id))
-        msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage)
-        logging.info("Submitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,amount*leverage))
-        await args.bot.notify(msg)
-    except Exception as e:
-        logging.error("Order issue: {}".format(e))
-        await args.bot.notify("ERROR in Program")
 
     # args.blocker = False
 
