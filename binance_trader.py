@@ -77,7 +77,7 @@ async def unblock():
 async def clear_logger():
     while True:
         await asyncio.sleep(86400)
-        with open("debug.log","w"):
+        with open("debug2.log","w"):
             pass
 
 async def do_trade(direction,price,amount,leverage):
@@ -236,7 +236,7 @@ async def main(cfg):
 if __name__ == '__main__':
 
     config = load_config()
-    logging.basicConfig(filename='debug.log', level=logging.INFO)
+    logging.basicConfig(filename='debug2.log', level=logging.INFO)
     logging.info('Running Bot')
     coro = main(config)
     asyncio.get_event_loop().run_until_complete(coro)
