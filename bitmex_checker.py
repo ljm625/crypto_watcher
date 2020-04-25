@@ -90,7 +90,7 @@ async def bitmex_ticker():
             #     args.bfx_price = float(json_data[1][6])
 
 def load_config():
-    with open("config.yaml") as file:
+    with open("config_check.yaml") as file:
         cfg = yaml.safe_load(file.read())
         return cfg
 
