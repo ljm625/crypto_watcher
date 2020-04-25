@@ -161,7 +161,7 @@ class Binance(object):
         result = await self._get_wrapper("/fapi/v1/balance",payload)
         for a in result:
             if a["asset"]=="USDT":
-                return a["balance"]
+                return float(a["balance"])
         return 0
 
     async def get_ticker(self):
