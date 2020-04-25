@@ -40,7 +40,7 @@ class Binance(object):
 
         url = "{}{}".format(self.base_url,endpoint)
         payload["timestamp"] = int(time.time()*1000)
-        payload["recvWindow"] = 2000
+        payload["recvWindow"] = 5000
 
         payload_raw = urllib.parse.urlencode(payload)
 
@@ -64,7 +64,7 @@ class Binance(object):
 
     async def _get_wrapper(self,endpoint,data={}):
         data["timestamp"] = int(time.time()*1000)
-        data["recvWindow"] = 2000
+        data["recvWindow"] = 5000
         verb = "GET"
 
         payload_raw = urllib.parse.urlencode(data)
