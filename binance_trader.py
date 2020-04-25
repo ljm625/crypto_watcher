@@ -1,6 +1,7 @@
 import json
 import logging
 import traceback
+from random import randint
 
 import aiohttp
 import websockets
@@ -30,7 +31,8 @@ args = Namespace(
     current_pos = 0,
     max_pos_count = 0,
     order_count = 0,
-    pos_count = 0
+    pos_count = 0,
+    active_pos = []
 )
 config ={}
 bot = None
@@ -80,6 +82,28 @@ async def clear_logger():
         with open("debug2.log","w"):
             pass
 
+async def close_pos(order_id,ttl):
+    await asyncio.sleep(ttl)
+    try:
+        for pos in args.active_pos:
+            if pos["id"]==order_id:
+                if pos["direction"]=="BUY":
+                    await args.api.do_short(pos["amount"],args.bitmex_price,market=True,reduce=True)
+                else:
+                    await args.api.do_long(pos["amount"],args.bitmex_price,market=True,reduce=True)
+                args.active_pos.remove(pos)
+
+                msg = "#Close\nPosition auto Closed at {} {}".format(args.bitmex_price,pos["amount"])
+                logging.info("Position auto Closed at {} {}".format(args.bitmex_price,pos["amount"]))
+                await args.bot.notify(msg)
+                return
+    except Exception as e:
+        await args.bot.notify("ERROR in Close Position, Order id : {}".format(order_id))
+        logging.error("ERROR in Close Position, Order id : {}".format(e,order_id))
+
+
+
+
 async def do_trade(direction,price,amount,leverage):
     # Blocker
     if args.blocker:
@@ -113,6 +137,11 @@ async def do_trade(direction,price,amount,leverage):
             args.order_list.append(order_id)
             args.order_count += 1
             asyncio.ensure_future(order_ttl(order_id))
+            if config.get("auto_close_pos"):
+                ttl = randint(0,config["position_random_range"])
+                logging.info("Auto closing position after {}sec".format(ttl))
+                asyncio.ensure_future(close_pos(order_id,ttl))
+
             msg = "#Order\nSubmitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,crypto_amount)
             logging.info("Submitted {} Order at {} {}".format(direction.upper(),args.bitmex_price,crypto_amount))
             await args.bot.notify(msg)
@@ -168,6 +197,7 @@ def update_order(data):
             if order["i"] in args.order_list:
                 args.order_list.remove(order["i"])
                 args.order_count = args.order_count-1 if args.order_count>0 else 0
+                args.active_pos.append({"id":order["i"],"amount":order["z"],"direction":order["S"]})
                 msg = "#Order\nYour Order has been Filled at {}".format(order["ap"])
                 logging.info("Order has been Filled at {}".format(order["ap"]))
                 asyncio.ensure_future(args.bot.notify(msg))
@@ -176,6 +206,11 @@ def update_order(data):
                 logging.info("Existing Order has been Filled at {}".format(order["ap"]))
                 asyncio.ensure_future(args.bot.notify(msg))
         elif order.get("x") and order["x"] =="CALCULATED":
+            if order["i"] in [i["id"] for i in args.active_pos]:
+                for pos in args.active_pos:
+                    if order["i"]==pos["id"]:
+                        args.active_pos.remove(pos)
+                        break
             msg = "#Liquidation\nYour Position has been Liquidated at {}".format(order["ap"])
             logging.info("Position has been Liquidated at {}".format(order["ap"]))
             asyncio.ensure_future(args.bot.notify(msg))

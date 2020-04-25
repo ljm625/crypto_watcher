@@ -119,24 +119,33 @@ class Binance(object):
 
 
 
-    async def do_long(self,amount,price):
+    async def do_long(self,amount,price,market=True,reduce=False):
         payload = {
             "symbol":self.pair,
             "side":"BUY",
             "type":"MARKET",
             "quantity":amount,
+            "reduceOnly":reduce
         }
+        if not market:
+            payload["type"]="LIMIT"
+            payload["price"]=price
         result = await self._api_wrapper("POST","/fapi/v1/order",payload)
         return result["orderId"]
 
 
-    async def do_short(self,amount,price):
+    async def do_short(self,amount,price,market=True,reduce=False):
         payload = {
             "symbol":self.pair,
             "side":"SELL",
             "type":"MARKET",
             "quantity":amount,
+            "reduceOnly": reduce
+
         }
+        if not market:
+            payload["type"]="LIMIT"
+            payload["price"]=price
         result = await self._api_wrapper("POST","/fapi/v1/order",payload)
         return result["orderId"]
 
