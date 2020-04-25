@@ -119,7 +119,7 @@ async def do_trade(direction,price,amount,leverage):
         try:
         # Check before placing order
             # Whether update order
-            crypto_amount = round(amount*leverage/args.bitmex_price,4)
+            crypto_amount = round(amount*leverage/args.bitmex_price,3)
 
             if args.order_count + args.pos_count>= args.max_pos_count:
                 return
