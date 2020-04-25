@@ -254,8 +254,8 @@ async def main(cfg):
     # Calculate order_size
     args.start_balance = await binance.get_balance()
     args.start_balance = float(args.start_balance)
-    args.order_size = int(args.start_balance/cfg["money_split"])
-    args.max_pos_count = int(args.start_balance/cfg["max_pos_count"])
+    args.order_size = round(args.start_balance/cfg["money_split"],2)
+    args.max_pos_count = cfg["max_pos_count"]
     logging.info("Bot order size is: {}".format(args.order_size))
     await binance.update_margin_type("ISOLATED")
     # Check balance
