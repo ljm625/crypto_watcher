@@ -90,7 +90,7 @@ async def do_trade(direction,price,amount,leverage):
         asyncio.ensure_future(unblock())
     success =False
     count = 0
-    while not success and count<3:
+    while not success and count<60:
         try:
         # Check before placing order
             # Whether update order
@@ -137,7 +137,7 @@ async def do_trade(direction,price,amount,leverage):
             logging.error("Order issue: {}".format(e))
             if "overloaded" in str(e):
                 print("System Overload")
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
                 count+=1
             else:
                 await args.bot.notify("ERROR in Program")
