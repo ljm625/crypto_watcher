@@ -48,6 +48,7 @@ async def period_runner():
             if cur_date.minute==0:
                 if args.bot_pos!=0 and args.have_pos:
                     if args.close_handler:
+                        args.close_handler.size = abs(args.bot_pos)
                         result = await args.close_handler.check()
                     else:
                         args.close_handler = ClosingAlgo(args.api,args.direction.lower(),abs(args.bot_pos))
@@ -58,6 +59,7 @@ async def period_runner():
                         args.close_handler = None
                         args.close_id = None
                         args.bot_pos = 0
+                        args.close_id = None
                         msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
                         logging.info("Position has been Closed at {}".format(args.bitmex_price))
                         asyncio.ensure_future(args.bot.notify(msg))

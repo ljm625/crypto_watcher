@@ -29,10 +29,11 @@ class ClosingAlgo(object):
         if self.direction=="BUY":
             self.protect_price = (self.max-self.min)*self.protect+self.min
             self.maxium_price = (self.max-self.min)*self.maxium+self.min
-        else:
+        elif self.direction=="SELL":
             self.protect_price = self.max - (self.max-self.min)*self.protect
             self.maxium_price = self.max - (self.max-self.min)*self.maxium
-
+        else:
+            return
         if close:
             # Try to close the position
             if self.direction=="BUY":
@@ -51,7 +52,7 @@ class ClosingAlgo(object):
                 # Make sure the Maxium Sell order still there.
                 self.maxium_id = await self.api.do_short(self.size,self.maxium_price,market=False,reduce=True)
                 return self.maxium_id
-            else:
+            elif self.direction=="SELL":
                 if self.maxium_id:
                     await self.api.cancel_order(self.maxium_id)
                 if self.reached_protect and histories[-1]["close"]>self.protect_price:
