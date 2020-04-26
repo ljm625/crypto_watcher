@@ -109,6 +109,10 @@ class Bitmex(object):
             "price":price,
             "ordType":"Limit"
         }
+        if market:
+            payload["ordType"]="Market"
+        if reduce:
+            payload["execInst"]="ReduceOnly"
         result = await self._api_wrapper("POST","/api/v1/order",payload)
         return result["orderID"]
 
@@ -120,6 +124,10 @@ class Bitmex(object):
             "price":price,
             "ordType":"Limit"
         }
+        if market:
+            payload["ordType"]="Market"
+        if reduce:
+            payload["execInst"]="ReduceOnly"
         result = await self._api_wrapper("POST","/api/v1/order",payload)
         return result["orderID"]
 
