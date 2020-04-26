@@ -296,7 +296,7 @@ async def main(cfg):
     # Clear logging
     asyncio.ensure_future(clear_logger())
     # Auto Close Position
-    if config["auto_close_pos"]:
+    if config["algo_close_pos"]:
         asyncio.ensure_future(period_runner())
     await bm.websocket(["instrument:XBTUSD","instrument:.BXBT","position:XBTUSD","order:XBTUSD"],handler_ws)
 
