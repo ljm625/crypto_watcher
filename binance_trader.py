@@ -69,6 +69,12 @@ async def period_runner():
                         msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
                         logging.info("Position has been Closed at {}".format(args.bitmex_price))
                         asyncio.ensure_future(args.bot.notify(msg))
+            elif args.close_id or args.close_handler:
+                # Might be liquidated. Clean up
+                args.close_handler = None
+                if args.close_id:
+                    await args.api.cancel_order(args.close_id)
+
         except Exception as e:
             traceback.print_exc()
             logging.error("Period Runner issue: {}".format(e))
