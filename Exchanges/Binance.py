@@ -5,8 +5,10 @@ import json
 import logging
 import time
 import urllib.parse
+from datetime import datetime
 
 import aiohttp
+import dateutil
 import websockets
 
 
@@ -190,6 +192,32 @@ class Binance(object):
     async def update_listen_key(self):
         await self._api_wrapper("PUT","/fapi/v1/listenKey",{})
 
+    async def get_history(self,candles,bin):
+        assert bin in ["1m","5m","1h","1d"]
+        payload = {
+            "interval":bin,
+            "symbol":self.pair,
+            "limit":candles+1
+        }
+        result = await self._get_wrapper("/fapi/v1/klines",payload)
+
+        return self.parse_history(result)
+
+    @staticmethod
+    def parse_history(result):
+        history = []
+        for data in result:
+            history.append(
+                {
+                    "timestamp":data[0]/1000,
+                    "open":float(data[1]),
+                    "close": float(data[4]),
+                    "low": float(data[3]),
+                    "high": float(data[2]),
+                    "vol":float(data[7])
+                }
+            )
+        return history[:-1]
 
     async def websocket(self,handler,auth=True):
         while True:

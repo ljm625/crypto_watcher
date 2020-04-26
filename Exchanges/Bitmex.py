@@ -5,8 +5,10 @@ import json
 import logging
 import time
 import urllib.parse
+from datetime import datetime
 
 import aiohttp
+import dateutil
 import websockets
 
 
@@ -100,7 +102,7 @@ class Bitmex(object):
             await self._api_wrapper("POST","/api/v1/position/leverage",payload)
             return True
 
-    async def do_long(self,amount,price):
+    async def do_long(self,amount,price,market=False,reduce=False):
         payload = {
             "symbol":self.pair,
             "orderQty":amount,
@@ -111,7 +113,7 @@ class Bitmex(object):
         return result["orderID"]
 
 
-    async def do_short(self,amount,price):
+    async def do_short(self,amount,price,market=False,reduce=False):
         payload = {
             "symbol":self.pair,
             "orderQty":-amount,
@@ -179,3 +181,32 @@ class Bitmex(object):
                 print("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 await self.websocket(subcribes,handler,auth)
 
+    async def get_history(self,candles,bin):
+        assert bin in ["1m","5m","1h","1d"]
+        payload = {
+            "binSize":bin,
+            "symbol":self.pair,
+            "partial":False,
+            "reverse":True,
+            "count":candles
+        }
+        result = await self._get_wrapper("/api/v1/trade/bucketed",payload)
+
+        return self.parse_history(result)
+
+    @staticmethod
+    def parse_history(result):
+        history = []
+        for data in result:
+            history.append(
+                {
+                    "timestamp":dateutil.parser.parse(data["timestamp"]).timestamp(),
+                    "open":float(data["open"]),
+                    "close": float(data["close"]),
+                    "low": float(data["low"]),
+                    "high": float(data["high"]),
+                    "vol":float(data["volume"])
+                }
+            )
+        history.reverse()
+        return history

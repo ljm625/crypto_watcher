@@ -1,6 +1,8 @@
 import json
 import logging
+import time
 import traceback
+from datetime import datetime
 
 import aiohttp
 import websockets
@@ -12,6 +14,7 @@ import yaml
 
 from BotNotifier import BotNotifier
 from Exchanges.Bitmex import Bitmex
+from Extra.ClosingAlgo import ClosingAlgo
 
 args = Namespace(
     bitmex_price=0,
@@ -29,10 +32,45 @@ args = Namespace(
     bot=None,
     blocker= False,
     current_pos = 0,
-    max_pos = 0
+    bot_pos = 0,
+    max_pos = 0,
+    close_id=None,
+    close_handler = None
 )
 config ={}
 bot = None
+
+async def period_runner():
+    while True:
+        try:
+            cur_time = time.time()
+            cur_date = datetime.fromtimestamp(cur_time)
+            if cur_date.minute==0:
+                if args.bot_pos!=0 and args.have_pos:
+                    if args.close_handler:
+                        result = await args.close_handler.check()
+                    else:
+                        args.close_handler = ClosingAlgo(args.api,args.direction.lower(),abs(args.bot_pos))
+                        result = await args.close_handler.check()
+                    if type(result) == str:
+                        args.close_id = result
+                    elif result == True:
+                        args.close_handler = None
+                        args.close_id = None
+                        args.bot_pos = 0
+                        msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
+                        logging.info("Position has been Closed at {}".format(args.bitmex_price))
+                        asyncio.ensure_future(args.bot.notify(msg))
+        except Exception as e:
+            traceback.print_exc()
+            logging.error("Period Runner issue: {}".format(e))
+            await args.bot.notify("ERROR in Period Runner")
+        await asyncio.sleep(60)
+
+
+
+
+
 
 async def opportunity_finder():
     def build_msg():
@@ -50,12 +88,9 @@ async def opportunity_finder():
     else:
         direction="buy"
     cur_price = int(args.bitmex_price)
-    if gap_percentage>=0.01:
-        logging.info("Triggering 100X Leverage Trade at {}".format(args.bitmex_price))
-        await do_trade(direction,cur_price,args.order_size,100)
-    elif gap_percentage>=0.005:
-        logging.info("Triggering 50X Leverage Trade at {}".format(args.bitmex_price))
-        await do_trade(direction,cur_price,args.order_size,50)
+    if gap_percentage>=config["threshold"]:
+        logging.info("Triggering {}X Leverage Trade at {}".format(config["leverage"],args.bitmex_price))
+        await do_trade(direction,cur_price,args.order_size,config["leverage"])
 
 async def order_ttl(order_id):
     try:
@@ -146,7 +181,7 @@ async def do_trade(direction,price,amount,leverage):
     # args.blocker = False
 
 def load_config():
-    with open("config.yaml") as file:
+    with open("config_bitmex.yaml") as file:
         cfg = yaml.safe_load(file.read())
         return cfg
 
@@ -181,6 +216,7 @@ def update_position(data):
                 elif pair['currentQty']==0:
                     args.have_pos = False
                     args.current_pos = pair['currentQty']
+                    args.bot_pos = 0
                 if pair.get("posState") and pair["posState"]=="Liquidated":
                     # Oh fuck its liquidated!
                     if args.have_order and not args.have_pos:
@@ -201,8 +237,19 @@ def update_order(data):
                 if order["orderID"]==args.order_id:
                     args.have_order = False
                     msg = "#Order\nYour Order has been Filled at {}".format(args.bitmex_price)
+                    args.bot_pos += order.get("orderQty")
                     logging.info("Order has been Filled at {}".format(args.bitmex_price))
+
                     asyncio.ensure_future(args.bot.notify(msg))
+                if order["orderID"]==args.close_id:
+                    args.bot_pos = 0
+                    args.close_handler = None
+                    msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
+                    logging.info("Position has been Closed at {}".format(args.bitmex_price))
+
+                    asyncio.ensure_future(args.bot.notify(msg))
+
+
                 else:
                     msg = "#Order\nExisting Order has been Filled at {}".format(args.bitmex_price)
                     logging.info("Existing Order has been Filled at {}".format(args.bitmex_price))
@@ -246,7 +293,9 @@ async def main(cfg):
     asyncio.ensure_future(balance_checker())
     # Clear logging
     asyncio.ensure_future(clear_logger())
-
+    # Auto Close Position
+    if config["auto_close_pos"]:
+        asyncio.ensure_future(period_runner())
     await bm.websocket(["instrument:XBTUSD","instrument:.BXBT","position:XBTUSD","order:XBTUSD"],handler_ws)
 
 
