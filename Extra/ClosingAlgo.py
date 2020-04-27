@@ -68,10 +68,10 @@ class ClosingAlgo(object):
                 elif self.direction=="sell":
                     if self.reached_protect and histories[-1]["close"]>self.protect_price:
                         # Close position now
-                        await self.api.do_long(self.size, self.maxium_price, market=True, reduce=True)
+                        await self.api.do_long(self.size, self.protect_price, market=True, reduce=True)
                     elif histories[-1]["low"]<self.protect_price*0.999 and histories[-1]["close"]>self.protect_price:
                         # Close position now
-                        await self.api.do_long(self.size, self.maxium_price, market=True, reduce=True)
+                        await self.api.do_long(self.size, self.protect_price, market=True, reduce=True)
             # Make sure the Maxium Sell order still there.
 
             if self.maxium_id:
@@ -79,11 +79,11 @@ class ClosingAlgo(object):
             if self.direction == "buy":
                 if histories[-1]["close"] > self.protect_price:
                     self.reached_protect = True
-                self.maxium_id = await self.api.do_short(self.size, self.maxium_price, market=False, reduce=True)
+                self.maxium_id = await self.api.do_short(self.size, round(self.maxium_price), market=False, reduce=True)
             elif self.direction=="sell":
                 if histories[-1]["close"] < self.protect_price:
                     self.reached_protect = True
-                self.maxium_id = await self.api.do_long(self.size, self.maxium_price, market=False, reduce=True)
+                self.maxium_id = await self.api.do_long(self.size, round(self.maxium_price)+1, market=False, reduce=True)
             return self.maxium_id
         except Exception as e:
             traceback.print_exc()
