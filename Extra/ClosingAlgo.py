@@ -1,4 +1,5 @@
 import logging
+import time
 import traceback
 
 
@@ -18,16 +19,29 @@ class ClosingAlgo(object):
         self.direction = direction
         self.maxium_id = None
         self.reached_protect=False
+        self.initial_timestamp = time.time()
 
 
     async def check(self,close=True):
         try:
             histories = await self.api.get_history(self.history,self.interval,incomplete=not close)
-            for kline in histories:
-                if kline["high"]> self.max or self.max==0:
-                    self.max=kline["high"]
-                if kline["low"]<self.min or self.min==0:
-                    self.min=kline["low"]
+            if self.direction =="buy":
+                for kline in histories:
+                    if kline["high"] > self.max or self.max == 0:
+                        self.max = kline["high"]
+                    if kline["timestamp"]>=self.initial_timestamp and kline["low"] < self.min or self.min == 0:
+                        self.min = kline["low"]
+            elif self.direction == "sell":
+                for kline in histories:
+                    if kline["timestamp"]>=self.initial_timestamp and kline["high"] > self.max or self.max == 0:
+                        self.max = kline["high"]
+                    if kline["low"] < self.min or self.min == 0:
+                        self.min = kline["low"]
+            if self.min == 0 or self.max == 0:
+                logging.info("Not enough info for Algo Close, return. Log:")
+                logging.info(histories)
+                logging.info(self.initial_timestamp)
+                return None
             if self.direction=="buy":
                 self.protect_price = (self.max-self.min)*self.protect+self.min
                 self.maxium_price = (self.max-self.min)*self.maxium+self.min

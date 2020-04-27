@@ -211,7 +211,7 @@ class Binance(object):
         for data in result:
             history.append(
                 {
-                    "timestamp":data[0]/1000,
+                    "timestamp":(data[0]/1000)+3600,
                     "open":float(data[1]),
                     "close": float(data[4]),
                     "low": float(data[3]),
