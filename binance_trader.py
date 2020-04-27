@@ -82,7 +82,7 @@ async def period_runner():
                 result = await args.close_handler.check(close=False)
                 if type(result) == str:
                     args.close_id = result
-                logging.info("Period runner found a new filled order, started algo close")
+                logging.info("Period runner found a new filled order, started algo close, sum is {}".format(sum_pos))
 
 
 
