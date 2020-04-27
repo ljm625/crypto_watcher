@@ -250,7 +250,7 @@ def update_order(data):
                 args.order_list.remove(order["i"])
                 args.order_count = args.order_count-1 if args.order_count>0 else 0
                 args.pos_count += 1
-                args.active_pos.append({"id":order["i"],"amount":order["z"],"direction":order["S"]})
+                args.active_pos.append({"id":order["i"],"amount":float(order["z"]),"direction":order["S"]})
                 msg = "#Order\nYour Order has been Filled at {}".format(order["ap"])
                 logging.info("Order has been Filled at {}".format(order["ap"]))
                 asyncio.ensure_future(args.bot.notify(msg))
