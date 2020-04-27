@@ -188,7 +188,6 @@ async def do_trade(direction,price,amount,leverage):
                 # Reversed, Close position and quit
                 logging.info("Reversed order received. Auto close pending position")
                 await close_pos_now()
-                return
             if args.order_count + args.pos_count>= args.max_pos_count:
                 return
             if args.cur_leverage != leverage:
