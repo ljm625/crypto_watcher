@@ -39,7 +39,8 @@ args = Namespace(
     bot_pos=0,
     max_pos=0,
     close_id=None,
-    close_handler=None
+    close_handler=None,
+    system_pos=0
 
 )
 config ={}
@@ -154,6 +155,17 @@ async def close_pos(order_id,ttl):
         logging.error("ERROR in Close Position, Order id : {}".format(e,order_id))
 
 
+async def close_pos_now():
+    sum_pos = sum([i["amount"] for i in args.active_pos])
+    if args.direction=="buy":
+        await args.api.do_short(sum_pos, args.bitmex_price, market=True, reduce=True)
+    elif args.direction=="sell":
+        await args.api.do_long(sum_pos, args.bitmex_price, market=True, reduce=True)
+    args.active_pos=[]
+    args.pos_count=0
+    msg = "#Close\nPosition auto Closed at {} {}".format(args.bitmex_price, sum_pos)
+    logging.info("Position auto Closed at {} {}".format(args.bitmex_price, sum_pos))
+    await args.bot.notify(msg)
 
 
 async def do_trade(direction,price,amount,leverage):
@@ -172,7 +184,11 @@ async def do_trade(direction,price,amount,leverage):
         # Check before placing order
             # Whether update order
             crypto_amount = round(amount*leverage/args.bitmex_price,3)
-
+            if direction!= args.direction and args.active_pos:
+                # Reversed, Close position and quit
+                logging.info("Reversed order received. Auto close pending position")
+                await close_pos_now()
+                return
             if args.order_count + args.pos_count>= args.max_pos_count:
                 return
             if args.cur_leverage != leverage:
@@ -235,10 +251,15 @@ async def find_gap(data):
 
 def update_position(data):
     if data.get('a'):
-        count = 0
         for pos in data['a']["P"]:
             if pos['s']=="BTCUSDT":
-                count +=1
+                amount = float(pos["pa"])
+                if amount>0:
+                    args.direction = "buy"
+                elif amount <0:
+                    args.direction = "sell"
+                args.system_pos = amount
+
         # args.pos_count = count
 
 

@@ -113,8 +113,11 @@ async def order_ttl(order_id):
         await args.api.cancel_order(order_id)
         logging.info("Order cancelled by TTL timeout {}".format(order_id))
     except Exception as e:
-        await args.bot.notify("ERROR in Program, Order TTL id : {}".format(order_id))
-        logging.error("Order TTL issue {} Order ID: {}".format(e,order_id))
+        if "Not Found" in str(e):
+            logging.error("Order TTL issue {} Order ID: {}".format(e, order_id))
+        else:
+            await args.bot.notify("ERROR in Program, Order TTL id : {}".format(order_id))
+            logging.error("Order TTL issue {} Order ID: {}".format(e,order_id))
 
 
 async def unblock():
@@ -128,6 +131,19 @@ async def clear_logger():
         await asyncio.sleep(86400)
         with open("debug.log","w"):
             pass
+
+async def close_pos_now():
+    if args.direction=="buy":
+        await args.api.do_short(args.current_pos, args.bitmex_price, market=True, reduce=True)
+    elif args.direction=="sell":
+        await args.api.do_long(args.current_pos, args.bitmex_price, market=True, reduce=True)
+    args.bot_pos = 0
+    args.have_pos = False
+    msg = "#Close\nPosition auto Closed at {} {}".format(args.bitmex_price, args.current_pos)
+    logging.info("Position auto Closed at {} {}".format(args.bitmex_price, args.current_pos))
+    await args.bot.notify(msg)
+
+
 
 async def do_trade(direction,price,amount,leverage):
     # Blocker
@@ -155,6 +171,8 @@ async def do_trade(direction,price,amount,leverage):
                     await args.bot.notify(msg)
                     logging.info("Ignoring {} Order at {} {} because current have position".format(direction.upper(), args.bitmex_price, amount * leverage))
                     return
+            elif args.have_pos and args.direction != direction:
+                await close_pos_now()
             if args.have_order:
                 logging.info("Cancelling order {}".format(args.order_id))
                 await args.api.cancel_order(args.order_id)
