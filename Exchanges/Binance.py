@@ -192,7 +192,7 @@ class Binance(object):
     async def update_listen_key(self):
         await self._api_wrapper("PUT","/fapi/v1/listenKey",{})
 
-    async def get_history(self,candles,bin):
+    async def get_history(self,candles,bin,incomplete=False):
         assert bin in ["1m","5m","1h","1d"]
         payload = {
             "interval":bin,
@@ -200,8 +200,10 @@ class Binance(object):
             "limit":candles+1
         }
         result = await self._get_wrapper("/fapi/v1/klines",payload)
-
-        return self.parse_history(result)
+        if incomplete:
+            return self.parse_history(result)
+        else:
+            return self.parse_history(result)[:-1]
 
     @staticmethod
     def parse_history(result):
@@ -217,7 +219,7 @@ class Binance(object):
                     "vol":float(data[7])
                 }
             )
-        return history[:-1]
+        return history
 
     async def websocket(self,handler,auth=True):
         while True:

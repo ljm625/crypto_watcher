@@ -1,4 +1,4 @@
-
+import logging
 
 
 class ClosingAlgo(object):
@@ -19,8 +19,8 @@ class ClosingAlgo(object):
         self.reached_protect=False
 
 
-    async def check(self,close=False):
-        histories = await self.api.get_history(self.history,self.interval)
+    async def check(self,close=True):
+        histories = await self.api.get_history(self.history,self.interval,incomplete=not close)
         for kline in histories:
             if kline["high"]> self.max or self.max==0:
                 self.max=kline["high"]
@@ -34,11 +34,12 @@ class ClosingAlgo(object):
             self.maxium_price = self.max - (self.max-self.min)*self.maxium
         else:
             return
+        logging.info("Current Algo prices: 0.386 {} 0.618 {}".format(self.protect_price,self.maxium_price))
+
+
         if close:
-            # Try to close the position
+            # Candle is close, try to check.
             if self.direction=="BUY":
-                if self.maxium_id:
-                    await self.api.cancel_order(self.maxium_id)
                 if self.reached_protect and histories[-1]["close"]<self.protect_price:
                     # Close position now
                     await self.api.do_short(self.size, self.protect_price, market=True, reduce=True)
@@ -47,26 +48,25 @@ class ClosingAlgo(object):
                     # Close position now
                     await self.api.do_short(self.size, self.protect_price, market=True, reduce=True)
                     return True
-                elif histories[-1]["close"]>self.protect_price:
-                    self.reached_protect=True
                 # Make sure the Maxium Sell order still there.
-                self.maxium_id = await self.api.do_short(self.size,self.maxium_price,market=False,reduce=True)
-                return self.maxium_id
             elif self.direction=="SELL":
-                if self.maxium_id:
-                    await self.api.cancel_order(self.maxium_id)
                 if self.reached_protect and histories[-1]["close"]>self.protect_price:
                     # Close position now
                     await self.api.do_long(self.size, self.maxium_price, market=True, reduce=True)
-
                 elif histories[-1]["low"]<self.protect_price*0.999 and histories[-1]["close"]>self.protect_price:
                     # Close position now
                     await self.api.do_long(self.size, self.maxium_price, market=True, reduce=True)
-                elif histories[-1]["close"]<self.protect_price:
-                    self.reached_protect=True
-                # Make sure the Maxium Sell order still there.
-                self.maxium_id = await self.api.do_long(self.size,self.maxium_price,market=False,reduce=True)
-                return self.maxium_id
-        else:
-            return None
+        # Make sure the Maxium Sell order still there.
+
+        if self.maxium_id:
+            await self.api.cancel_order(self.maxium_id)
+        if self.direction == "BUY":
+            if histories[-1]["close"] > self.protect_price:
+                self.reached_protect = True
+            self.maxium_id = await self.api.do_short(self.size, self.maxium_price, market=False, reduce=True)
+        elif self.direction=="SELL":
+            if histories[-1]["close"] < self.protect_price:
+                self.reached_protect = True
+            self.maxium_id = await self.api.do_long(self.size, self.maxium_price, market=False, reduce=True)
+        return self.maxium_id
 

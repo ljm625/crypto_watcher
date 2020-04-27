@@ -4,6 +4,7 @@ import hmac
 import json
 import logging
 import time
+import traceback
 import urllib.parse
 from datetime import datetime
 
@@ -185,16 +186,17 @@ class Bitmex(object):
                         json_data=json.loads(data)
                         await handler(json_data)
             except Exception as e:
+                traceback.print_exc()
                 logging.error("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 print("ERROR: websocket faced issue: {}, auto respawn".format(e))
                 await self.websocket(subcribes,handler,auth)
 
-    async def get_history(self,candles,bin):
+    async def get_history(self,candles,bin,incomplete=False):
         assert bin in ["1m","5m","1h","1d"]
         payload = {
             "binSize":bin,
             "symbol":self.pair,
-            "partial":False,
+            "partial":incomplete,
             "reverse":True,
             "count":candles
         }

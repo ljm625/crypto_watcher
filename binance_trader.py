@@ -69,11 +69,21 @@ async def period_runner():
                         msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
                         logging.info("Position has been Closed at {}".format(args.bitmex_price))
                         asyncio.ensure_future(args.bot.notify(msg))
-            elif args.close_id or args.close_handler:
-                # Might be liquidated. Clean up
-                args.close_handler = None
-                if args.close_id:
-                    await args.api.cancel_order(args.close_id)
+                elif args.close_id or args.close_handler:
+                    # Might be liquidated. Clean up
+                    args.close_handler = None
+                    if args.close_id:
+                        await args.api.cancel_order(args.close_id)
+            elif args.pos_count!=0 and args.active_pos and not args.close_handler:
+                # Possible a new order filled.
+                sum_pos = sum([i["amount"] for i in args.active_pos])
+                args.close_handler = ClosingAlgo(args.api, args.direction.lower(), abs(sum_pos))
+                result = await args.close_handler.check(close=False)
+                if type(result) == str:
+                    args.close_id = result
+                logging.info("Period runner found a new filled order, started algo close")
+
+
 
         except Exception as e:
             traceback.print_exc()
@@ -235,7 +245,7 @@ def update_position(data):
 def update_order(data):
     if data.get('o'):
         order = data["o"]
-        if order.get("x") and order["x"] == "FILL":
+        if order.get("X") and order["X"] == "FILLED":
             if order["i"] in args.order_list:
                 args.order_list.remove(order["i"])
                 args.order_count = args.order_count-1 if args.order_count>0 else 0
@@ -256,7 +266,7 @@ def update_order(data):
                 msg = "#Order\nExisting Order has been Filled at {}".format(order["ap"])
                 logging.info("Existing Order has been Filled at {}".format(order["ap"]))
                 asyncio.ensure_future(args.bot.notify(msg))
-        elif order.get("x") and order["x"] =="CALCULATED":
+        elif order.get("X") and (order["X"] =="NEW_INSURANCE" or order["X"] =="NEW_ADL"):
             if order["i"] in [i["id"] for i in args.active_pos]:
                 for pos in args.active_pos:
                     if order["i"]==pos["id"]:
@@ -266,7 +276,7 @@ def update_order(data):
             msg = "#Liquidation\nYour Position has been Liquidated at {}".format(order["ap"])
             logging.info("Position has been Liquidated at {}".format(order["ap"]))
             asyncio.ensure_future(args.bot.notify(msg))
-        elif order.get("x") and order["x"] == "CANCELED":
+        elif order.get("X") and order["X"] == "CANCELED":
             if order["i"] in args.order_list:
                 args.order_list.remove(order["i"])
                 args.order_count = args.order_count - 1 if args.order_count > 0 else 0

@@ -68,6 +68,14 @@ async def period_runner():
                     args.close_handler = None
                     if args.close_id:
                         await args.api.cancel_order(args.close_id)
+            elif args.bot_pos!=0 and args.have_pos and not args.close_handler:
+                # Possible a new order filled.
+                args.close_handler = ClosingAlgo(args.api, args.direction.lower(), abs(args.bot_pos))
+                result = await args.close_handler.check(close=False)
+                if type(result) == str:
+                    args.close_id = result
+                logging.info("Period runner found a new filled order, started algo close")
+
         except Exception as e:
             traceback.print_exc()
             logging.error("Period Runner issue: {}".format(e))
@@ -246,7 +254,7 @@ def update_order(data):
                 if order["orderID"]==args.order_id:
                     args.have_order = False
                     msg = "#Order\nYour Order has been Filled at {}".format(args.bitmex_price)
-                    args.bot_pos += order.get("orderQty")
+                    args.bot_pos += order.get("cumQty")
                     logging.info("Order has been Filled at {}".format(args.bitmex_price))
 
                     asyncio.ensure_future(args.bot.notify(msg))
