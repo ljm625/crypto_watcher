@@ -106,6 +106,7 @@ async def opportunity_finder():
     if gap_percentage>=config["threshold"]:
         logging.info("Triggering {}X Leverage Trade at {}".format(config["leverage"],args.bitmex_price))
         await do_trade(direction,cur_price,args.order_size,config["leverage"])
+        args.direction = direction
 
 async def order_ttl(order_id):
     try:
