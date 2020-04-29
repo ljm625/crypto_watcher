@@ -307,8 +307,15 @@ async def balance_checker():
             balance = await args.api.get_balance()
             if balance<= args.start_balance*0.2:
                 # Generate Warning Message.
-                msg = "#Warning\nYour BitMEX current balance is : {} which may cause issue on Bot. Please Check NOW.".format(balance)
+                msg = "#Warning\nYour current balance is : {} which may cause issue on Bot. Please Check NOW.".format(balance)
                 await args.bot.notify(msg)
+            elif balance>=args.start_balance:
+                args.order_size = int(args.start_balance / config["money_split"])
+                args.max_pos = int(args.start_balance / config["max_position"])
+                args.start_balance = balance
+                msg = "#Balance\nYour Current balance is : {} which just increased!".format(balance)
+                await args.bot.notify(msg)
+
         except Exception as e:
             traceback.print_exc()
             logging.error("Balance Checker issue: {}".format(e))
