@@ -265,7 +265,17 @@ def update_position(data):
 def update_order(data):
     if data.get('o'):
         order = data["o"]
-        if order.get("X") and order["X"] == "FILLED":
+        if (order.get("X") and (order["X"] =="NEW_INSURANCE" or order["X"] =="NEW_ADL")) or (order.get("o") and order["o"]=="LIQUIDATION"):
+            if order["s"]=="BTCUSDT":
+                args.active_pos = []
+                args.pos_count = 0
+
+            msg = "#Liquidation\nYour Position has been Liquidated at {}".format(order["ap"])
+            logging.info("Position has been Liquidated at {}".format(order["ap"]))
+            asyncio.ensure_future(args.bot.notify(msg))
+
+
+        elif order.get("X") and order["X"] == "FILLED":
             if order["i"] in args.order_list:
                 args.order_list.remove(order["i"])
                 args.order_count = args.order_count-1 if args.order_count>0 else 0
@@ -286,15 +296,6 @@ def update_order(data):
                 msg = "#Order\nExisting Order has been Filled at {}".format(order["ap"])
                 logging.info("Existing Order has been Filled at {}".format(order["ap"]))
                 asyncio.ensure_future(args.bot.notify(msg))
-        elif order.get("X") and (order["X"] =="NEW_INSURANCE" or order["X"] =="NEW_ADL"):
-            if order["i"] in [i["id"] for i in args.active_pos]:
-                for pos in args.active_pos:
-                    if order["i"]==pos["id"]:
-                        args.active_pos.remove(pos)
-                        args.pos_count -= 1
-                        break
-            msg = "#Liquidation\nYour Position has been Liquidated at {}".format(order["ap"])
-            logging.info("Position has been Liquidated at {}".format(order["ap"]))
             asyncio.ensure_future(args.bot.notify(msg))
         elif order.get("X") and order["X"] == "CANCELED":
             if order["i"] in args.order_list:
