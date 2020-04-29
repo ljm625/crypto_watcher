@@ -301,9 +301,11 @@ async def handler_ws(data):
         update_order(data)
 
 async def balance_checker():
+    count =0
     while True:
         try:
             await asyncio.sleep(3600)
+            count+=1
             balance = await args.api.get_balance()
             if balance<= args.start_balance*0.2:
                 # Generate Warning Message.
@@ -313,8 +315,11 @@ async def balance_checker():
                 args.order_size = int(args.start_balance / config["money_split"])
                 args.max_pos = int(args.start_balance / config["max_position"])
                 args.start_balance = balance
-                msg = "#Balance\nYour Current balance is : {} which just increased!".format(balance)
+            if count ==24:
+                msg = "#Report\nYour current balance is : {}".format(balance)
                 await args.bot.notify(msg)
+                count = 0
+
 
         except Exception as e:
             traceback.print_exc()
