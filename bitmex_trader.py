@@ -334,7 +334,9 @@ async def main(cfg):
     # Calculate order_size
     args.start_balance = await bm.get_balance()
     args.order_size = int(args.start_balance/cfg["money_split"])
+    logging.info("Bot order size is: {}".format(args.order_size))
     args.max_pos = int(args.start_balance/cfg["max_position"])
+    logging.info("MAX POS: {}".format(args.max_pos))
 
     # Check balance
     asyncio.ensure_future(balance_checker())
