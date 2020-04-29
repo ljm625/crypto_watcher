@@ -324,7 +324,7 @@ async def balance_checker():
                 # Generate Warning Message.
                 msg = "#Warning\nYour current balance is : {} which may cause issue on Bot. Please Check NOW.".format(balance)
                 await args.bot.notify(msg)
-            elif balance>=args.start_balance:
+            elif balance>args.start_balance:
                 args.order_size = round(args.start_balance / config["money_split"], 2)
                 args.start_balance = balance
                 msg = "#Balance\nYour Current balance is : {} which just increased!".format(balance)
