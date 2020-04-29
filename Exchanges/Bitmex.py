@@ -11,6 +11,7 @@ from datetime import datetime
 import aiohttp
 import dateutil
 import websockets
+import dateutil.parser
 
 
 class Bitmex(object):

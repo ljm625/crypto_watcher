@@ -132,6 +132,7 @@ class Binance(object):
         if not market:
             payload["type"]="LIMIT"
             payload["price"]=price
+            payload["timeInForce"]="GTC"
         result = await self._api_wrapper("POST","/fapi/v1/order",payload)
         return result["orderId"]
 
@@ -148,6 +149,7 @@ class Binance(object):
         if not market:
             payload["type"]="LIMIT"
             payload["price"]=price
+            payload["timeInForce"]="GTC"
         result = await self._api_wrapper("POST","/fapi/v1/order",payload)
         return result["orderId"]
 
