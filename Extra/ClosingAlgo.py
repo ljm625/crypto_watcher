@@ -16,6 +16,8 @@ class ClosingAlgo(object):
         self.size=size
         self.max=0
         self.min=0
+        self.real_max = 0
+        self.real_min = 0
         self.direction = direction
         self.maxium_id = None
         self.reached_protect=False
@@ -32,33 +34,52 @@ class ClosingAlgo(object):
                 for kline in histories:
                     if kline["high"] > self.max or self.max == 0:
                         self.max = kline["high"]
+                        self.real_max = kline["high"]
                     if kline["timestamp"]>=self.initial_timestamp and (kline["low"] < self.min or self.min == 0):
                         self.min = kline["low"]
+                    if kline["low"] < self.real_min or self.real_min == 0:
+                        self.real_min = kline["low"]
             elif self.direction == "sell":
                 for kline in histories:
                     if kline["timestamp"]>=self.initial_timestamp and (kline["high"] > self.max or self.max == 0):
                         self.max = kline["high"]
+                    if kline["high"] > self.real_max or self.real_max == 0:
+                        self.real_max = kline["high"]
                     if kline["low"] < self.min or self.min == 0:
                         self.min = kline["low"]
+                        self.real_min = kline["low"]
             if self.min == 0 or self.max == 0:
                 logging.info("Not enough info for Algo Close, return. Log:")
                 logging.info(histories)
                 logging.info(self.initial_timestamp)
                 return None
             if self.direction=="buy":
+                self.protect_price = (self.max-self.min)*self.protect+self.min
+                self.maxium_price = (self.max-self.min)*self.maxium+self.min
+
                 if histories[-1]["high"] == self.max and not close:
                     # Buy the dip. No algo close
                     self.disable = True
                     return "TTL"
-                self.protect_price = (self.max-self.min)*self.protect+self.min
-                self.maxium_price = (self.max-self.min)*self.maxium+self.min
+                middle_price = self.real_max - (self.real_max-self.real_min)*0.386
+                if histories[-1]["close"]>middle_price and not close:
+                    self.disable = True
+                    return "TTL"
+
             elif self.direction=="sell":
+                self.protect_price = self.max - (self.max-self.min)*self.protect
+                self.maxium_price = self.max - (self.max-self.min)*self.maxium
+
                 if histories[-1]["low"] == self.min and not close:
                     # Sell the low. No algo close
                     self.disable = True
                     return "TTL"
-                self.protect_price = self.max - (self.max-self.min)*self.protect
-                self.maxium_price = self.max - (self.max-self.min)*self.maxium
+                middle_price = self.real_min + (self.real_max-self.real_min)*0.386
+                if histories[-1]["close"]<middle_price and not close:
+                    self.disable = True
+                    return "TTL"
+
+
             else:
                 return
             logging.info("Current Algo prices: 0.386 {} 0.618 {}".format(self.protect_price,self.maxium_price))
