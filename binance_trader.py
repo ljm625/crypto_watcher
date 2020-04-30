@@ -282,7 +282,6 @@ def update_order(data):
             logging.info("Position has been Liquidated at {}".format(order["ap"]))
             asyncio.ensure_future(args.bot.notify(msg))
 
-
         elif order.get("X") and order["X"] == "FILLED":
             if order["i"] in args.order_list:
                 args.order_list.remove(order["i"])
@@ -291,19 +290,15 @@ def update_order(data):
                 args.active_pos.append({"id":order["i"],"amount":float(order["z"]),"direction":order["S"]})
                 msg = "#Order\nYour Order has been Filled at {}".format(order["ap"])
                 logging.info("Order has been Filled at {}".format(order["ap"]))
-                asyncio.ensure_future(args.bot.notify(msg))
             elif order["i"] == args.close_id:
                 args.active_pos=[]
                 args.pos_count = 0
                 args.close_handler = None
                 msg = "#Close\nYour Position has been Closed at {}".format(args.bitmex_price)
                 logging.info("Position has been Closed at {}".format(args.bitmex_price))
-                asyncio.ensure_future(args.bot.notify(msg))
-
             else:
                 msg = "#Order\nExisting Order has been Filled at {}".format(order["ap"])
                 logging.info("Existing Order has been Filled at {}".format(order["ap"]))
-                asyncio.ensure_future(args.bot.notify(msg))
             asyncio.ensure_future(args.bot.notify(msg))
         elif order.get("X") and order["X"] == "CANCELED":
             if order["i"] in args.order_list:

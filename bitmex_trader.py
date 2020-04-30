@@ -247,6 +247,7 @@ def update_position(data):
                         args.direction="buy"
                     else:
                         args.direction = "sell"
+                    logging.info("Current pos status:{} {} {}".format(args.have_pos,args.direction,args.current_pos))
                 elif pair['currentQty']==0:
                     args.have_pos = False
                     args.current_pos = pair['currentQty']
