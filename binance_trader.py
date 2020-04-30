@@ -257,8 +257,9 @@ def update_position(data):
                     args.direction = "buy"
                 elif amount <0:
                     args.direction = "sell"
-                args.pos_count = amount
-                if args.pos_count == 0:
+                args.system_pos = amount
+                if args.system_pos == 0:
+                    args.pos_count = 0
                     args.active_pos = []
 
 
