@@ -265,6 +265,8 @@ def update_position(data):
 def update_order(data):
     if data.get('o'):
         order = data["o"]
+        # Just for gathering debug info
+        logging.info(json.dumps(order))
         if (order.get("X") and (order["X"] =="NEW_INSURANCE" or order["X"] =="NEW_ADL")) or (order.get("o") and order["o"]=="LIQUIDATION"):
             if order["s"]=="BTCUSDT":
                 args.active_pos = []
