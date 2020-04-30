@@ -3,6 +3,7 @@ import logging
 import time
 import traceback
 from datetime import datetime
+from random import randint
 
 import aiohttp
 import websockets
@@ -73,7 +74,13 @@ async def period_runner():
                 args.close_handler = ClosingAlgo(args.api, args.direction.lower(), abs(args.bot_pos))
                 result = await args.close_handler.check(close=False)
                 if type(result) == str:
-                    args.close_id = result
+                    if result =="TTL":
+                        # TTL close this position
+                        ttl = config["position_ttl"] + randint(0, config["position_random_range"])
+                        logging.info("Auto closing position after {}sec".format(ttl))
+                        asyncio.ensure_future(close_pos(ttl))
+                    else:
+                        args.close_id = result
                 logging.info("Period runner found a new filled order, started algo close")
 
         except Exception as e:
@@ -174,6 +181,7 @@ async def do_trade(direction,price,amount,leverage):
                     return
             elif args.have_pos and args.direction != direction:
                 await close_pos_now()
+                return
             if args.have_order:
                 logging.info("Cancelling order {}".format(args.order_id))
                 await args.api.cancel_order(args.order_id)
@@ -245,8 +253,10 @@ def update_position(data):
                     args.current_pos = pair['currentQty']
                     if pair['currentQty']>0:
                         args.direction="buy"
-                    else:
+                    elif pair['currentQty'] < 0:
                         args.direction = "sell"
+                    else:
+                        args.direction = "watch"
                     logging.info("Current pos status:{} {} {}".format(args.have_pos,args.direction,args.current_pos))
                 elif pair['currentQty']==0:
                     args.have_pos = False
@@ -348,6 +358,23 @@ async def main(cfg):
     if config["algo_close_pos"]:
         asyncio.ensure_future(period_runner())
     await bm.websocket(["instrument:XBTUSD","instrument:.BXBT","position:XBTUSD","order:XBTUSD"],handler_ws)
+
+async def close_pos(ttl):
+    await asyncio.sleep(ttl)
+    try:
+        if args.bot_pos!=0 and args.have_pos:
+            if args.direction=="buy":
+                await args.api.do_short(args.bot_pos,args.bitmex_price,market=True,reduce=True)
+            elif args.direction=="sell":
+                await args.api.do_long(args.bot_pos,args.bitmex_price,market=True,reduce=True)
+
+        msg = "#Close\nPosition auto Closed at {} {}".format(args.bitmex_price,args.bot_pos)
+        logging.info("Position auto Closed at {} {}".format(args.bitmex_price,args.bot_pos))
+        await args.bot.notify(msg)
+        return
+    except Exception as e:
+        await args.bot.notify("ERROR in Close Position")
+        logging.error("ERROR in Close Position {}".format(str(e)))
 
 
 

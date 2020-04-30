@@ -20,9 +20,12 @@ class ClosingAlgo(object):
         self.maxium_id = None
         self.reached_protect=False
         self.initial_timestamp = time.time()
+        self.disable = False
 
 
     async def check(self,close=True):
+        if self.disable:
+            return False
         try:
             histories = await self.api.get_history(self.history,self.interval,incomplete=not close)
             if self.direction =="buy":
@@ -43,15 +46,22 @@ class ClosingAlgo(object):
                 logging.info(self.initial_timestamp)
                 return None
             if self.direction=="buy":
+                if histories[-1]["high"] == self.max and not close:
+                    # Buy the dip. No algo close
+                    self.disable = True
+                    return "TTL"
                 self.protect_price = (self.max-self.min)*self.protect+self.min
                 self.maxium_price = (self.max-self.min)*self.maxium+self.min
             elif self.direction=="sell":
+                if histories[-1]["low"] == self.min and not close:
+                    # Sell the low. No algo close
+                    self.disable = True
+                    return "TTL"
                 self.protect_price = self.max - (self.max-self.min)*self.protect
                 self.maxium_price = self.max - (self.max-self.min)*self.maxium
             else:
                 return
             logging.info("Current Algo prices: 0.386 {} 0.618 {}".format(self.protect_price,self.maxium_price))
-
 
             if close:
                 # Candle is close, try to check.

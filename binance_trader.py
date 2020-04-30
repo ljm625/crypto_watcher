@@ -81,7 +81,14 @@ async def period_runner():
                 args.close_handler = ClosingAlgo(args.api, args.direction.lower(), abs(sum_pos))
                 result = await args.close_handler.check(close=False)
                 if type(result) == str:
-                    args.close_id = result
+                    if result =="TTL":
+                        # TTL close this position
+                        for pos in args.active_pos:
+                            ttl = config["position_ttl"] + randint(0, config["position_random_range"])
+                            logging.info("Auto closing position after {}sec".format(ttl))
+                            asyncio.ensure_future(close_pos(pos["id"],ttl))
+                    else:
+                        args.close_id = result
                 logging.info("Period runner found a new filled order, started algo close, sum is {}".format(sum_pos))
 
 
@@ -188,6 +195,7 @@ async def do_trade(direction,price,amount,leverage):
                 # Reversed, Close position and quit
                 logging.info("Reversed order received. Auto close pending position")
                 await close_pos_now()
+                return
             if args.order_count + args.pos_count>= args.max_pos_count:
                 return
             if args.cur_leverage != leverage:
@@ -205,7 +213,7 @@ async def do_trade(direction,price,amount,leverage):
             args.order_count += 1
             # asyncio.ensure_future(order_ttl(order_id))
             if config.get("auto_close_pos"):
-                ttl = randint(0,config["position_random_range"])
+                ttl = config["position_ttl"] + randint(0,config["position_random_range"])
                 logging.info("Auto closing position after {}sec".format(ttl))
                 asyncio.ensure_future(close_pos(order_id,ttl))
 
