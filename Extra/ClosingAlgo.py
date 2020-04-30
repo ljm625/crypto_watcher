@@ -29,11 +29,11 @@ class ClosingAlgo(object):
                 for kline in histories:
                     if kline["high"] > self.max or self.max == 0:
                         self.max = kline["high"]
-                    if kline["timestamp"]>=self.initial_timestamp and kline["low"] < self.min or self.min == 0:
+                    if kline["timestamp"]>=self.initial_timestamp and (kline["low"] < self.min or self.min == 0):
                         self.min = kline["low"]
             elif self.direction == "sell":
                 for kline in histories:
-                    if kline["timestamp"]>=self.initial_timestamp and kline["high"] > self.max or self.max == 0:
+                    if kline["timestamp"]>=self.initial_timestamp and (kline["high"] > self.max or self.max == 0):
                         self.max = kline["high"]
                     if kline["low"] < self.min or self.min == 0:
                         self.min = kline["low"]

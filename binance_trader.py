@@ -203,7 +203,7 @@ async def do_trade(direction,price,amount,leverage):
             # Make sure order will be ignored after ttl.
             args.order_list.append(order_id)
             args.order_count += 1
-            asyncio.ensure_future(order_ttl(order_id))
+            # asyncio.ensure_future(order_ttl(order_id))
             if config.get("auto_close_pos"):
                 ttl = randint(0,config["position_random_range"])
                 logging.info("Auto closing position after {}sec".format(ttl))
