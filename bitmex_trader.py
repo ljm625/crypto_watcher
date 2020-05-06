@@ -381,7 +381,12 @@ async def close_pos(ttl):
 if __name__ == '__main__':
 
     config = load_config()
-    logging.basicConfig(filename='debug.log', level=logging.INFO)
+    logging.basicConfig(
+        filename='debug.log',
+        level=logging.INFO,
+        format = '%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt = '%Y-%m-%d %H:%M:%S',
+    )
     logging.info('Running Bot')
     coro = main(config)
     asyncio.get_event_loop().run_until_complete(coro)

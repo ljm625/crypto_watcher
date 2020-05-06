@@ -117,7 +117,7 @@ class ClosingAlgo(object):
 
             if close:
                 # Candle is close, try to check.
-                if self.direction=="buy":
+                if self.direction=="buy" and histories[-1]["timestamp"]>self.initial_timestamp+3600:
                     if self.reached_protect and histories[-1]["close"]<self.protect_price:
                         # Close position now
                         await self.api.do_short(self.size, self.protect_price, market=True, reduce=True)
@@ -127,7 +127,7 @@ class ClosingAlgo(object):
                         await self.api.do_short(self.size, self.protect_price, market=True, reduce=True)
                         return True
                     # Make sure the Maxium Sell order still there.
-                elif self.direction=="sell":
+                elif self.direction=="sell" and histories[-1]["timestamp"]>self.initial_timestamp+3600:
                     if self.reached_protect and histories[-1]["close"]>self.protect_price:
                         # Close position now
                         await self.api.do_long(self.size, self.protect_price, market=True, reduce=True)
