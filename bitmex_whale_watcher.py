@@ -64,7 +64,7 @@ async def get_funding(data):
     if data.get('data')[0]['symbol'] == 'XBTUSD':
         if data.get('data')[0].get("indicativeFundingRate"):
             funding_rate = data.get('data')[0].get("indicativeFundingRate")
-            logging.info("Current funding rate:".format(funding_rate))
+            logging.info("Current funding rate: {}".format(funding_rate))
             if len(args.funding_rate)<config["max_funding_rate_num"]:
                 args.funding_rate.append(funding_rate)
             else:
