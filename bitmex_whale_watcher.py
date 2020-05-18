@@ -48,7 +48,6 @@ def find_gap():
     if gap >= config["max_gap"]:
         index_max = args.funding_rate.index(max_funding)
         index_min = args.funding_rate.index(min_funding)
-        time_gap = abs(index_max-index_min)
         if index_max> index_min:
             msg_body = "Funding increase: {} -> {} {}% in {}mins".format(min_funding,max_funding,gap*100/min_funding, time_gap)
         else:

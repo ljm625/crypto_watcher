@@ -129,7 +129,7 @@ async def order_ttl(order_id):
 
 
 async def unblock():
-    await asyncio.sleep(30)
+    await asyncio.sleep(config["cooldown"])
     logging.info("Unblock Buy")
     args.blocker = False
 
